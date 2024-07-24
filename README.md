@@ -1,16 +1,19 @@
-# scales
+<div align="center">
+    <br>
+    <h1>⚖️ Scale</h1>
+</div>
 
-A new Flutter project.
+_Flutter_ application for data sychronization with Mi Composition Scale 2.
 
-## Getting Started
+## 🛠️ Building
 
-This project is a starting point for a Flutter application.
+1. Install [FVM](https://fvm.app/documentation/getting-started/installation)
 
-A few resources to get you started if this is your first Flutter project:
+2. Run `fvm flutter run`
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## 💼 License
+
+Created by Arthur Khazbulatov & Tikhon Petrishchev
+
+Copyright © 2024 OOO Telepat. All rights reserved.
