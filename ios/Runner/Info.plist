@@ -45,5 +45,7 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>The Medsenger Scales app uses Bluetooth to sync data with the Mi Smart Scales.</string>
 </dict>
 </plist>
