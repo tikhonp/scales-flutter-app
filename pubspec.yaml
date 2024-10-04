@@ -37,6 +37,10 @@ dependencies:
   cupertino_icons: ^1.0.6
   flutter_platform_widgets: ^7.0.1
   flutter_reactive_ble: ^5.3.1
+  device_info_plus: ^10.1.2
+  permission_handler: ^11.3.1
+  xiaomi_scale: ^2.2.1
+  shared_preferences: ^2.3.2
 
 dev_dependencies:
   flutter_test:
