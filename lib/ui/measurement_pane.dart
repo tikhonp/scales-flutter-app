@@ -1,21 +1,43 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_platform_widgets/flutter_platform_widgets.dart';
+import 'package:scales/util/medsenger_scales.dart';
+import 'package:scales/util/shared_preferences.dart';
 import 'package:xiaomi_scale/xiaomi_scale.dart';
 
 import '../util/permission.dart';
+
+enum MeasurementPaneStage {
+  created,
+  measureing,
+  measureSuccess,
+  sendingToServer,
+  sentToServer,
+}
 
 class MeasurementPane extends StatefulWidget {
   const MeasurementPane({super.key});
 
   @override
-  _MeasurementPaneState createState() => _MeasurementPaneState();
+  State<StatefulWidget> createState() => _MeasurementPaneState();
 }
 
 class _MeasurementPaneState extends State<MeasurementPane> {
   StreamSubscription? _measurementSubscription;
-  Map<String, MiScaleMeasurement> measurements = {}; // <Id, Measurement>
+  MiScaleMeasurement? _measurement;
+  MeasurementPaneStage _stage = MeasurementPaneStage.created;
   final _scale = MiScale.instance;
+  late MiScaleGender _userSex;
+  late int _userAge;
+  late double _userHeight;
+
+  @override
+  void initState() {
+    startTakingMeasurements();
+    super.initState();
+  }
 
   @override
   void dispose() {
@@ -24,18 +46,43 @@ class _MeasurementPaneState extends State<MeasurementPane> {
   }
 
   Future<void> startTakingMeasurements() async {
-    // Make sure we have location permission required for BLE scanning
     if (!await checkPermission()) return;
-    // Start taking measurements
+    Store.getUserSex().then((value) {
+      if (value != null) {
+        _userSex = value;
+      } else {
+        log('user sex is nil');
+      }
+    });
+    Store.getUserAge().then((value) {
+      if (value != null) {
+        _userAge = value;
+      } else {
+        log('user age is nil');
+      }
+    });
+    Store.getUserHeight().then((value) {
+      if (value != null) {
+        _userHeight = value;
+      } else {
+        log('user height is nil');
+      }
+    });
     setState(() {
       _measurementSubscription = _scale.takeMeasurements().listen(
         (measurement) {
           setState(() {
-            measurements[measurement.id] = measurement;
+            _stage = MeasurementPaneStage.measureing;
+            _measurement = measurement;
+            if (measurement.stage == MiScaleMeasurementStage.MEASURED) {
+              _stage = MeasurementPaneStage.measureSuccess;
+              stopTakingMeasurements();
+              log('Measurement received: $measurement weight ${measurement.weight}');
+            }
           });
         },
         onError: (e) {
-          print(e);
+          log('Error while taking measurements: $e');
           stopTakingMeasurements();
         },
         onDone: stopTakingMeasurements,
@@ -51,56 +98,116 @@ class _MeasurementPaneState extends State<MeasurementPane> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: ElevatedButton(
-                onPressed: _measurementSubscription == null
-                    ? startTakingMeasurements
-                    : null,
-                child: const Text(
-                  'Start Taking Measurements',
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ),
-            Expanded(
-              child: ElevatedButton(
-                onPressed: _measurementSubscription != null
-                    ? stopTakingMeasurements
-                    : null,
-                child: const Text(
-                  'Stop Taking Measurements',
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ),
-          ],
-        ),
-        Opacity(
-          opacity: _measurementSubscription != null ? 1 : 0,
-          child: const Center(child: CircularProgressIndicator()),
-        ),
-        Expanded(
-          child: SingleChildScrollView(
-            child: Column(
-              children:
-                  measurements.values.map(_buildMeasurementWidget).toList(),
-            ),
+    switch (_stage) {
+      case MeasurementPaneStage.created:
+        return _startingMeasurement();
+      case MeasurementPaneStage.measureing:
+        final measurement = _measurement;
+        if (measurement != null) {
+          return _buildMeasurementWidget(measurement);
+        } else {
+          return PlatformText("Измерение...");
+        }
+      case MeasurementPaneStage.measureSuccess:
+        return _measureSuccess();
+      case MeasurementPaneStage.sendingToServer:
+        return _sendingToServer();
+      case MeasurementPaneStage.sentToServer:
+        return _sentToServer();
+    }
+  }
+
+  Widget _sendingToServer() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          PlatformCircularProgressIndicator(),
+          PlatformText(
+            "Отправляем на сервер...",
+            textAlign: TextAlign.center,
           ),
-        )
-      ],
+        ],
+      ),
     );
   }
 
+  Center _sentToServer() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          PlatformText('Sent to server!'),
+          PlatformElevatedButton(
+            child: PlatformText('Измерить заново'),
+            onPressed: () {
+              startTakingMeasurements();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _startingMeasurement() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          PlatformCircularProgressIndicator(),
+          PlatformText(
+            "Начинаем измерение...",
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _measureSuccess() {
+    final measurement = _measurement;
+    if (measurement != null) {
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _buildMeasurementWidget(measurement),
+          PlatformElevatedButton(
+            child: PlatformText("Отправить на сервер"),
+            onPressed: () {
+              setState(() {
+                _stage = MeasurementPaneStage.sendingToServer;
+              });
+              final extraData =
+                  measurement.getBodyData(_userSex, _userAge, _userHeight);
+              if (extraData == null) {
+                log('Failed to get body data');
+                return;
+              }
+              MedsengerScales.sendMesurementData(
+                measurement.weight,
+                measurement.dateTime,
+                "bodyFat ${extraData.bodyFat}, boneMass ${extraData.boneMass}, lbmCoefficient ${extraData.lbmCoefficient}, muscleMass ${extraData.muscleMass}, BMI ${extraData.bmi}, water ${extraData.water}, visceralFat ${extraData.visceralFat}",
+              ).then((_) {
+                setState(() {
+                  _stage = MeasurementPaneStage.sentToServer;
+                });
+              }).catchError((e) {
+                log('Failed to send measurement data: $e');
+              });
+            },
+          ),
+        ],
+      );
+    } else {
+      return PlatformText("Ошибка...");
+    }
+  }
+
   Widget _buildMeasurementWidget(MiScaleMeasurement measurement) {
-    final extraData = measurement.getBodyData(MiScaleGender.MALE, 25, 188);
-    return Container(
+    final extraData = measurement.getBodyData(_userSex, _userAge, _userHeight);
+    return Center(
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Expanded(
             child: Padding(
@@ -109,14 +216,14 @@ class _MeasurementPaneState extends State<MeasurementPane> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
+                  PlatformText(
                     measurement.weight.toStringAsFixed(2) +
                         measurement.unit.toString().split('.')[1],
                   ),
-                  Text(
+                  PlatformText(
                     measurement.stage.toString().split('.')[1],
                   ),
-                  Text(
+                  PlatformText(
                     measurement.dateTime.toIso8601String(),
                   ),
                   if (extraData != null) ...[
@@ -124,47 +231,30 @@ class _MeasurementPaneState extends State<MeasurementPane> {
                       height: 2,
                       color: Colors.grey,
                     ),
-                    Text(
+                    PlatformText(
                       'bodyFat: ${extraData.bodyFat}',
                     ),
-                    Text(
+                    PlatformText(
                       'boneMass: ${extraData.boneMass}',
                     ),
-                    Text(
+                    PlatformText(
                       'lbmCoefficient: ${extraData.lbmCoefficient}',
                     ),
-                    Text(
+                    PlatformText(
                       'muscleMass: ${extraData.muscleMass}',
                     ),
-                    Text(
+                    PlatformText(
                       'BMI: ${extraData.bmi}',
                     ),
-                    Text(
+                    PlatformText(
                       'water: ${extraData.water}',
                     ),
-                    Text(
+                    PlatformText(
                       'visceralFat: ${extraData.visceralFat}',
                     ),
                   ],
                 ],
               ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: IconButton(
-              icon: const Icon(Icons.delete),
-              onPressed: () {
-                final deviceId = measurement.deviceId;
-                // Cancel the measurement if it is still active
-                if (measurement.isActive && deviceId != null) {
-                  _scale.cancelMeasurement(deviceId);
-                }
-                // Remove the measurement from the list
-                setState(() {
-                  measurements.remove(measurement.id);
-                });
-              },
             ),
           ),
         ],

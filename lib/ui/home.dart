@@ -1,10 +1,12 @@
+import 'dart:async';
+import 'dart:developer';
+
+import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_platform_widgets/flutter_platform_widgets.dart';
-
-import '../ble_controller.dart';
-import 'measurement_pane.dart';
-import 'raw_data_pane.dart';
-import 'scanning_pane.dart';
+import 'package:scales/ui/measurement_pane.dart';
+import 'package:scales/util/shared_preferences.dart';
+import 'package:xiaomi_scale/xiaomi_scale.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key, required this.title});
@@ -16,9 +18,63 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  final bleController = BleController();
+  late final AppLinks _appLinks;
+  StreamSubscription<Uri>? _linksSubscription;
 
-  var _currentIndex = 0;
+  // state
+  bool _agentTokenExists = false;
+
+  @override
+  void initState() {
+    _initDeepLinks();
+    Store.getAgentToken().then((value) {
+      setState(() {
+        _agentTokenExists = value != null;
+      });
+    });
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _linksSubscription?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _initDeepLinks() async {
+    _appLinks = AppLinks();
+    _linksSubscription = _appLinks.uriLinkStream.listen((link) {
+      link.queryParameters.forEach((key, value) {
+        switch (key) {
+          case 'agent_token':
+            Store.setAgentToken(value).then((_) => {
+                  setState(() {
+                    _agentTokenExists = true;
+                  })
+                });
+            break;
+          case 'user_sex':
+            if (value == 'male') {
+              Store.setUserSex(MiScaleGender.MALE);
+            } else if (value == 'female') {
+              Store.setUserSex(MiScaleGender.FEMALE);
+            } else {
+              log('Invalid user_sex value: $value');
+            }
+            break;
+          case 'user_age':
+            Store.setUserAge(int.parse(value));
+            break;
+          case 'user_height':
+            Store.setUserHeight(double.parse(value));
+            break;
+          default:
+            log('Received query parameter: $key -> $value');
+        }
+      });
+      log('Received link: $link');
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,36 +83,32 @@ class _HomeState extends State<Home> {
         title: Text(widget.title),
       ),
       body: SafeArea(
-        child: IndexedStack(
-          index: _currentIndex,
-          children: const [
-            MeasurementPane(),
-            ScanningPane(),
-            RawDataPane(),
-          ],
-        ),
-      ),
-      bottomNavBar: PlatformNavBar(
-        currentIndex: _currentIndex,
-        itemChanged: _bottomTapped,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.timeline),
-            label: 'Measurements',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            label: 'Scanning',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.description),
-            label: 'Raw Data',
-          ),
-        ],
+        child: Builder(builder: (context) {
+          if (_agentTokenExists) {
+            return MeasurementPane();
+          } else {
+            return noAgentToken();
+          }
+        }),
       ),
     );
   }
 
-  void _bottomTapped(int index) => setState(() => _currentIndex = index);
+  Column noAgentToken() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          Icons.beach_access,
+          color: Colors.blue,
+          size: 36.0,
+        ),
+        PlatformText(
+          "Пожалуйста, зайдите в приложение Medsenger и подключите весы",
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
 }
 
