@@ -141,6 +141,7 @@ class _MeasurementPaneState extends State<MeasurementPane> {
           PlatformElevatedButton(
             child: PlatformText('Измерить заново'),
             onPressed: () {
+              _stage = MeasurementPaneStage.created;
               startTakingMeasurements();
             },
           ),
@@ -177,16 +178,10 @@ class _MeasurementPaneState extends State<MeasurementPane> {
               setState(() {
                 _stage = MeasurementPaneStage.sendingToServer;
               });
-              final extraData =
-                  measurement.getBodyData(_userSex, _userAge, _userHeight);
-              if (extraData == null) {
-                log('Failed to get body data');
-                return;
-              }
               MedsengerScales.sendMesurementData(
                 measurement.weight,
+                measurement.getBodyData(_userSex, _userAge, _userHeight),
                 measurement.dateTime,
-                "bodyFat ${extraData.bodyFat}, boneMass ${extraData.boneMass}, lbmCoefficient ${extraData.lbmCoefficient}, muscleMass ${extraData.muscleMass}, BMI ${extraData.bmi}, water ${extraData.water}, visceralFat ${extraData.visceralFat}",
               ).then((_) {
                 setState(() {
                   _stage = MeasurementPaneStage.sentToServer;

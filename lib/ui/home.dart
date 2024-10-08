@@ -99,12 +99,12 @@ class _HomeState extends State<Home> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Icon(
-          Icons.beach_access,
+          Icons.monitor_weight,
           color: Colors.blue,
           size: 36.0,
         ),
         PlatformText(
-          "Пожалуйста, зайдите в приложение Medsenger и подключите весы",
+          "Для того, чтобы синхронизированные данные отправлялись врачу, пожалуйста, перейдите в приложение Medsenger и в чате с врачом нажмите \"подключить устройство\".",
           textAlign: TextAlign.center,
         ),
       ],
