@@ -3,6 +3,7 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_platform_widgets/flutter_platform_widgets.dart';
+import 'package:intl/intl.dart';
 import 'package:scales/util/medsenger_scales.dart';
 import 'package:scales/util/shared_preferences.dart';
 import 'package:xiaomi_scale/xiaomi_scale.dart';
@@ -137,12 +138,30 @@ class _MeasurementPaneState extends State<MeasurementPane> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          PlatformText('Sent to server!'),
+          Icon(
+            Icons.check_circle,
+            color: Colors.green,
+            size: 36.0,
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8),
+          ),
+          PlatformText('Данные успешно отправлены на сервер'),
+          Padding(
+            padding: const EdgeInsets.all(8),
+          ),
           PlatformElevatedButton(
             child: PlatformText('Измерить заново'),
             onPressed: () {
               _stage = MeasurementPaneStage.created;
               startTakingMeasurements();
+            },
+          ),
+          PlatformTextButton(
+            child: PlatformText('Сбросить аккаунт Medsenger'),
+            onPressed: () {
+              Store.clear();
+              setState(() {});
             },
           ),
         ],
@@ -156,10 +175,21 @@ class _MeasurementPaneState extends State<MeasurementPane> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           PlatformCircularProgressIndicator(),
+          Padding(
+            padding: const EdgeInsets.all(8),
+          ),
           PlatformText(
             "Начинаем измерение...",
             textAlign: TextAlign.center,
           ),
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: PlatformText(
+              "Пожалуйста, встаньте на весы",
+              style: TextStyle(color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+          )
         ],
       ),
     );
@@ -172,6 +202,9 @@ class _MeasurementPaneState extends State<MeasurementPane> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           _buildMeasurementWidget(measurement),
+          Padding(
+            padding: const EdgeInsets.all(8),
+          ),
           PlatformElevatedButton(
             child: PlatformText("Отправить на сервер"),
             onPressed: () {
@@ -191,6 +224,15 @@ class _MeasurementPaneState extends State<MeasurementPane> {
               });
             },
           ),
+          PlatformTextButton(
+            child: PlatformText("Измерить заново"),
+            onPressed: () {
+              setState(() {
+                _stage = MeasurementPaneStage.created;
+              });
+              startTakingMeasurements();
+            },
+          ),
         ],
       );
     } else {
@@ -198,61 +240,59 @@ class _MeasurementPaneState extends State<MeasurementPane> {
     }
   }
 
+  String _getStageString(MiScaleMeasurementStage stage) {
+    switch (stage) {
+      case MiScaleMeasurementStage.STABILIZED:
+        return "Измерение стабилизировано";
+      case MiScaleMeasurementStage.MEASURED:
+        return "Измерение завершено";
+      case MiScaleMeasurementStage.MEASURING:
+        return "Измерение...";
+      case MiScaleMeasurementStage.WEIGHT_REMOVED:
+        return "Пожалуйста, встаньте на весы";
+    }
+  }
+
   Widget _buildMeasurementWidget(MiScaleMeasurement measurement) {
     final extraData = measurement.getBodyData(_userSex, _userAge, _userHeight);
     return Center(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  PlatformText(
-                    measurement.weight.toStringAsFixed(2) +
-                        measurement.unit.toString().split('.')[1],
-                  ),
-                  PlatformText(
-                    measurement.stage.toString().split('.')[1],
-                  ),
-                  PlatformText(
-                    measurement.dateTime.toIso8601String(),
-                  ),
-                  if (extraData != null) ...[
-                    Container(
-                      height: 2,
-                      color: Colors.grey,
-                    ),
-                    PlatformText(
-                      'bodyFat: ${extraData.bodyFat}',
-                    ),
-                    PlatformText(
-                      'boneMass: ${extraData.boneMass}',
-                    ),
-                    PlatformText(
-                      'lbmCoefficient: ${extraData.lbmCoefficient}',
-                    ),
-                    PlatformText(
-                      'muscleMass: ${extraData.muscleMass}',
-                    ),
-                    PlatformText(
-                      'BMI: ${extraData.bmi}',
-                    ),
-                    PlatformText(
-                      'water: ${extraData.water}',
-                    ),
-                    PlatformText(
-                      'visceralFat: ${extraData.visceralFat}',
-                    ),
-                  ],
-                ],
+      child: Card(
+        elevation: 4,
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              PlatformText(
+                "${measurement.weight.toStringAsFixed(2)} кг",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
+                textAlign: TextAlign.center,
               ),
-            ),
+              PlatformText(
+                _getStageString(measurement.stage),
+              ),
+              if (extraData != null) ...[
+                Container(
+                  height: 2,
+                  color: Colors.grey,
+                ),
+                PlatformText(
+                  'Процент жира: ${extraData.bodyFat.toStringAsFixed(0)}%',
+                ),
+                PlatformText(
+                  'Костная масса: ${extraData.boneMass.toStringAsFixed(2)} кг',
+                ),
+                PlatformText(
+                  'Мышечная масса: ${extraData.muscleMass.toStringAsFixed(2)} кг',
+                ),
+                PlatformText(
+                  'Процент воды в организме: ${extraData.water.toStringAsFixed(0)}%',
+                ),
+              ],
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

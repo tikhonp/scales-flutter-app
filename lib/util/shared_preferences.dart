@@ -7,6 +7,11 @@ class Store {
   static const String userAgeKey = 'user_age';
   static const String userHeightKey = 'user_height';
 
+  static Future<void> clear() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+  }
+
   static Future<void> setAgentToken(String token) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString(agentTokenKey, token);
