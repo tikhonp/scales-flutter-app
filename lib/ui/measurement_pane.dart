@@ -3,6 +3,7 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_platform_widgets/flutter_platform_widgets.dart';
+import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:scales/ui/medsenger_colors.dart';
 import 'package:scales/util/medsenger_scales.dart';
 import 'package:scales/util/shared_preferences.dart';
@@ -27,12 +28,17 @@ class MeasurementPane extends StatefulWidget {
 
 class _MeasurementPaneState extends State<MeasurementPane> {
   StreamSubscription? _measurementSubscription;
+  StreamSubscription<BleStatus>? _bleStatusSubscription;
+  final FlutterReactiveBle _ble = FlutterReactiveBle();
   MiScaleMeasurement? _measurement;
   MeasurementPaneStage _stage = MeasurementPaneStage.created;
   final _scale = MiScale.instance;
   late MiScaleGender _userSex;
   late int _userAge;
   late double _userHeight;
+
+  // state
+  bool _bleReady = false;
 
   @override
   void initState() {
@@ -42,8 +48,9 @@ class _MeasurementPaneState extends State<MeasurementPane> {
 
   @override
   void dispose() {
-    super.dispose();
+    _bleStatusSubscription?.cancel();
     stopTakingMeasurements(dispose: true);
+    super.dispose();
   }
 
   Future<void> startTakingMeasurements() async {
@@ -69,25 +76,40 @@ class _MeasurementPaneState extends State<MeasurementPane> {
         log('user height is nil');
       }
     });
-    setState(() {
-      _measurementSubscription = _scale.takeMeasurements().listen(
-        (measurement) {
-          setState(() {
-            _stage = MeasurementPaneStage.measureing;
-            _measurement = measurement;
-            if (measurement.stage == MiScaleMeasurementStage.MEASURED) {
-              _stage = MeasurementPaneStage.measureSuccess;
-              stopTakingMeasurements();
-              log('Measurement received: $measurement weight ${measurement.weight}');
-            }
-          });
-        },
-        onError: (e) {
-          log('Error while taking measurements: $e');
-          stopTakingMeasurements();
-        },
-        onDone: stopTakingMeasurements,
-      );
+    _bleStatusSubscription = _ble.statusStream.listen((status) {
+      if (status == BleStatus.ready) {
+        setState(() {
+          _bleReady = true;
+        });
+        if (_measurementSubscription != null) {
+          log('Measurement subscription is already active');
+          return;
+        }
+        _measurementSubscription = _scale.takeMeasurements().listen(
+          (measurement) {
+            setState(() {
+              _stage = MeasurementPaneStage.measureing;
+              _measurement = measurement;
+              if (measurement.stage == MiScaleMeasurementStage.MEASURED) {
+                _stage = MeasurementPaneStage.measureSuccess;
+                stopTakingMeasurements();
+                log('Measurement received: $measurement weight ${measurement.weight}');
+              }
+            });
+          },
+          onError: (e) {
+            log('Error while taking measurements: $e');
+            stopTakingMeasurements();
+          },
+          onDone: stopTakingMeasurements,
+        );
+      } else {
+        log('Bluetooth is not ready');
+        stopTakingMeasurements();
+        setState(() {
+          _bleReady = false;
+        });
+      }
     });
   }
 
@@ -102,22 +124,26 @@ class _MeasurementPaneState extends State<MeasurementPane> {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Builder(builder: (context) {
-        switch (_stage) {
-          case MeasurementPaneStage.created:
-            return _startingMeasurement();
-          case MeasurementPaneStage.measureing:
-            final measurement = _measurement;
-            if (measurement != null) {
-              return _buildMeasurementWidget(measurement);
-            } else {
-              return PlatformText("Измерение...");
-            }
-          case MeasurementPaneStage.measureSuccess:
-            return _measureSuccess();
-          case MeasurementPaneStage.sendingToServer:
-            return _sendingToServer();
-          case MeasurementPaneStage.sentToServer:
-            return _sentToServer();
+        if (_bleReady) {
+          switch (_stage) {
+            case MeasurementPaneStage.created:
+              return _startingMeasurement();
+            case MeasurementPaneStage.measureing:
+              final measurement = _measurement;
+              if (measurement != null) {
+                return _buildMeasurementWidget(measurement);
+              } else {
+                return PlatformText("Измерение...");
+              }
+            case MeasurementPaneStage.measureSuccess:
+              return _measureSuccess();
+            case MeasurementPaneStage.sendingToServer:
+              return _sendingToServer();
+            case MeasurementPaneStage.sentToServer:
+              return _sentToServer();
+          }
+        } else {
+          return Text('Запускаем Bluetooth...');
         }
       }),
     );
@@ -222,7 +248,7 @@ class _MeasurementPaneState extends State<MeasurementPane> {
                 log('Failed to send measurement data: $e');
               });
             },
-            child: PlatformText("Отправить на сервер"),
+            child: PlatformText("Отправить врачу"),
           ),
           PlatformTextButton(
             onPressed: () {

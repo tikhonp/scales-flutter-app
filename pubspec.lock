@@ -167,7 +167,7 @@ packages:
     source: hosted
     version: "7.0.1"
   flutter_reactive_ble:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: flutter_reactive_ble
       sha256: "247e2efa76de203d1ba11335c13754b5b9d0504b5423e5b0c93a600f016b24e0"

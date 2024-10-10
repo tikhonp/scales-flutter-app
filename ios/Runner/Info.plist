@@ -26,10 +26,16 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>FlutterDeepLinkingEnabled</key>
 	<false/>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>The Medsenger Scales app uses Bluetooth to sync data with the Mi Scales.</string>
+	<string>Приложение Medsenger Scales использует Bluetooth для синхронизации данных с умными весами.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>Приложение Medsenger Scales использует Bluetooth для синхронизации данных с умными весами.</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>© 2024 TelePat LLC. All rights reserved.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
@@ -49,7 +55,5 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>NSBluetoothPeripheralUsageDescription</key>
-	<string>The Medsenger Scales app uses Bluetooth to sync data with the Mi Scales.</string>
 </dict>
 </plist>
