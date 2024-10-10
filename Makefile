@@ -10,3 +10,5 @@ run_release:
 ios_build:
 	fvm flutter build ipa --split-debug-info --obfuscate
 
+android_build:
+	fvm flutter build appbundle
