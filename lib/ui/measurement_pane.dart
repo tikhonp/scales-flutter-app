@@ -3,6 +3,7 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_platform_widgets/flutter_platform_widgets.dart';
+import 'package:scales/ui/medsenger_colors.dart';
 import 'package:scales/util/medsenger_scales.dart';
 import 'package:scales/util/shared_preferences.dart';
 import 'package:xiaomi_scale/xiaomi_scale.dart';
@@ -98,23 +99,28 @@ class _MeasurementPaneState extends State<MeasurementPane> {
 
   @override
   Widget build(BuildContext context) {
-    switch (_stage) {
-      case MeasurementPaneStage.created:
-        return _startingMeasurement();
-      case MeasurementPaneStage.measureing:
-        final measurement = _measurement;
-        if (measurement != null) {
-          return _buildMeasurementWidget(measurement);
-        } else {
-          return PlatformText("Измерение...");
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Builder(builder: (context) {
+        switch (_stage) {
+          case MeasurementPaneStage.created:
+            return _startingMeasurement();
+          case MeasurementPaneStage.measureing:
+            final measurement = _measurement;
+            if (measurement != null) {
+              return _buildMeasurementWidget(measurement);
+            } else {
+              return PlatformText("Измерение...");
+            }
+          case MeasurementPaneStage.measureSuccess:
+            return _measureSuccess();
+          case MeasurementPaneStage.sendingToServer:
+            return _sendingToServer();
+          case MeasurementPaneStage.sentToServer:
+            return _sentToServer();
         }
-      case MeasurementPaneStage.measureSuccess:
-        return _measureSuccess();
-      case MeasurementPaneStage.sendingToServer:
-        return _sendingToServer();
-      case MeasurementPaneStage.sentToServer:
-        return _sentToServer();
-    }
+      }),
+    );
   }
 
   Widget _sendingToServer() {
@@ -145,16 +151,17 @@ class _MeasurementPaneState extends State<MeasurementPane> {
           Padding(
             padding: const EdgeInsets.all(8),
           ),
-          PlatformText('Данные успешно отправлены на сервер'),
+          PlatformText('Данные успешно отправлены вашему врачу.'),
           Padding(
             padding: const EdgeInsets.all(8),
           ),
           PlatformElevatedButton(
-            child: PlatformText('Измерить заново'),
             onPressed: () {
               _stage = MeasurementPaneStage.created;
               startTakingMeasurements();
             },
+            color: MedsengerColors.accent,
+            child: PlatformText('Измерить заново'),
           ),
         ],
       ),
@@ -198,7 +205,7 @@ class _MeasurementPaneState extends State<MeasurementPane> {
             padding: const EdgeInsets.all(8),
           ),
           PlatformElevatedButton(
-            child: PlatformText("Отправить на сервер"),
+            color: MedsengerColors.accent,
             onPressed: () {
               setState(() {
                 _stage = MeasurementPaneStage.sendingToServer;
@@ -215,15 +222,19 @@ class _MeasurementPaneState extends State<MeasurementPane> {
                 log('Failed to send measurement data: $e');
               });
             },
+            child: PlatformText("Отправить на сервер"),
           ),
           PlatformTextButton(
-            child: PlatformText("Измерить заново"),
             onPressed: () {
               setState(() {
                 _stage = MeasurementPaneStage.created;
               });
               startTakingMeasurements();
             },
+            child: PlatformText(
+              "Измерить заново",
+              style: TextStyle(color: MedsengerColors.accent),
+            ),
           ),
         ],
       );
@@ -249,9 +260,10 @@ class _MeasurementPaneState extends State<MeasurementPane> {
     final extraData = measurement.getBodyData(_userSex, _userAge, _userHeight);
     return Center(
       child: Card(
+        color: Colors.white.withOpacity(0.7),
         elevation: 4,
         child: Padding(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
@@ -261,13 +273,37 @@ class _MeasurementPaneState extends State<MeasurementPane> {
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
                 textAlign: TextAlign.center,
               ),
-              PlatformText(
-                _getStageString(measurement.stage),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Builder(builder: (context) {
+                    if (measurement.stage == MiScaleMeasurementStage.MEASURED) {
+                      return Icon(
+                        Icons.check_circle,
+                        color: Colors.green,
+                      );
+                    } else {
+                      return PlatformCircularProgressIndicator();
+                    }
+                  }),
+                  Padding(
+                    padding: const EdgeInsets.all(2),
+                  ),
+                  PlatformText(
+                    _getStageString(measurement.stage),
+                  ),
+                ],
               ),
               if (extraData != null) ...[
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                ),
                 Container(
                   height: 2,
                   color: Colors.grey,
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
                 ),
                 PlatformText(
                   'Процент жира: ${extraData.bodyFat.toStringAsFixed(0)}%',

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_platform_widgets/flutter_platform_widgets.dart';
 import 'package:scales/ui/measurement_pane.dart';
+import 'package:scales/ui/medsenger_colors.dart';
 import 'package:scales/util/shared_preferences.dart';
 import 'package:xiaomi_scale/xiaomi_scale.dart';
 
@@ -119,7 +120,7 @@ class _HomeState extends State<Home> {
         children: [
           Icon(
             Icons.bluetooth,
-            color: Colors.blue,
+            color: MedsengerColors.blue,
             size: 36.0,
           ),
           PlatformText(
@@ -132,19 +133,22 @@ class _HomeState extends State<Home> {
   }
 
   Widget noAgentToken() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(
-          Icons.monitor_weight,
-          color: Colors.blue,
-          size: 36.0,
-        ),
-        PlatformText(
-          "Для того, чтобы синхронизированные данные отправлялись врачу, пожалуйста, перейдите в приложение Medsenger и в чате с врачом нажмите \"подключить устройство\".",
-          textAlign: TextAlign.center,
-        ),
-      ],
+    return Padding(
+      padding: const EdgeInsets.all(18.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.monitor_weight,
+            color: MedsengerColors.blue,
+            size: 36.0,
+          ),
+          PlatformText(
+            "Для того, чтобы синхронизированные данные отправлялись врачу, пожалуйста, перейдите в приложение Medsenger и в чате с врачом нажмите \"подключить устройство\".",
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 }
