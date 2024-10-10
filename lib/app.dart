@@ -9,9 +9,8 @@ class App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PlatformApp(
-      title: 'Medsenger Scales', // TODO: Give proper title
-      home:
-          const Home(title: 'Medsenger Scales'), // TODO: Give proper title too
+      title: 'Medsenger Scales',
+      home: const Home(title: 'Medsenger Scales'),
       material: (_, __) =>
           MaterialAppData(theme: ThemeData(primarySwatch: Colors.blue)),
       cupertino: (_, __) => CupertinoAppData(
@@ -24,3 +23,4 @@ class App extends StatelessWidget {
     );
   }
 }
+

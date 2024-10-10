@@ -3,7 +3,6 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_platform_widgets/flutter_platform_widgets.dart';
-import 'package:intl/intl.dart';
 import 'package:scales/util/medsenger_scales.dart';
 import 'package:scales/util/shared_preferences.dart';
 import 'package:xiaomi_scale/xiaomi_scale.dart';
@@ -155,13 +154,6 @@ class _MeasurementPaneState extends State<MeasurementPane> {
             onPressed: () {
               _stage = MeasurementPaneStage.created;
               startTakingMeasurements();
-            },
-          ),
-          PlatformTextButton(
-            child: PlatformText('Сбросить аккаунт Medsenger'),
-            onPressed: () {
-              Store.clear();
-              setState(() {});
             },
           ),
         ],
