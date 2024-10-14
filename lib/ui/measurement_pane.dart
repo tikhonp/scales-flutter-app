@@ -143,7 +143,9 @@ class _MeasurementPaneState extends State<MeasurementPane> {
               return _sentToServer();
           }
         } else {
-          return Text('Запускаем Bluetooth...');
+          return Center(
+            child: PlatformText('Запускаем Bluetooth...'),
+          );
         }
       }),
     );
