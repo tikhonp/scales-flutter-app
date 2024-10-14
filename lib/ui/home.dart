@@ -20,7 +20,7 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  late final AppLinks _appLinks;
+  final AppLinks _appLinks = AppLinks();
   StreamSubscription<Uri>? _linksSubscription;
   StreamSubscription<BluetoothAdapterState>? _bluetoothStateSubscription;
 
@@ -56,7 +56,6 @@ class _HomeState extends State<Home> {
   }
 
   Future<void> _initDeepLinks() async {
-    _appLinks = AppLinks();
     _linksSubscription = _appLinks.uriLinkStream.listen((link) {
       link.queryParameters.forEach((key, value) {
         switch (key) {

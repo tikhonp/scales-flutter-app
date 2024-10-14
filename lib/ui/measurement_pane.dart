@@ -33,9 +33,9 @@ class _MeasurementPaneState extends State<MeasurementPane> {
   MiScaleMeasurement? _measurement;
   MeasurementPaneStage _stage = MeasurementPaneStage.created;
   final _scale = MiScale.instance;
-  late MiScaleGender _userSex;
-  late int _userAge;
-  late double _userHeight;
+  MiScaleGender? _userSex;
+  int? _userAge;
+  double? _userHeight;
 
   // state
   bool _bleReady = false;
@@ -236,9 +236,14 @@ class _MeasurementPaneState extends State<MeasurementPane> {
               setState(() {
                 _stage = MeasurementPaneStage.sendingToServer;
               });
+              MiScaleBodyData? extraData;
+              if (_userSex != null && _userAge != null && _userHeight != null) {
+                extraData =
+                    measurement.getBodyData(_userSex!, _userAge!, _userHeight!);
+              }
               MedsengerScales.sendMesurementData(
                 measurement.weight,
-                measurement.getBodyData(_userSex, _userAge, _userHeight),
+                extraData,
                 measurement.dateTime,
               ).then((_) {
                 setState(() {
@@ -283,7 +288,10 @@ class _MeasurementPaneState extends State<MeasurementPane> {
   }
 
   Widget _buildMeasurementWidget(MiScaleMeasurement measurement) {
-    final extraData = measurement.getBodyData(_userSex, _userAge, _userHeight);
+    MiScaleBodyData? extraData;
+    if (_userSex != null && _userAge != null && _userHeight != null) {
+      extraData = measurement.getBodyData(_userSex!, _userAge!, _userHeight!);
+    }
     return Center(
       child: Card(
         color: Colors.white.withOpacity(0.7),
