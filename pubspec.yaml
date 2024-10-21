@@ -2,7 +2,7 @@ name: scales
 description: "Mi Body composition scales integration with Medsenger" 
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.0.1+7
 
 environment:
   sdk: '>=3.4.4 <4.0.0'
